@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Biblioteca</title>
+<meta name="description" content="Catalogo di libri e fumetti">
+<!-- Pagina generata da strumenti/genera.py a partire da strumenti/sito.html:
+     l'aspetto si cambia in sito.html, non qui. -->
+<style>
+  :root {
+    --fondo: #f3eee5;
+    --scheda: #fffdf8;
+    --testata: #f8f3ea;
+    --testo: #2a2522;
+    --tenue: #776c64;
+    --linea: #e2d9cb;
+    --accento: #8c2f39;
+    --accento-fondo: #f2e4e1;
+    --s-letto: #2e7d32;
+    --s-inlettura: #1565c0;
+    --s-daleggere: #a07f00;
+    --s-inpari: #00796b;
+    --s-abbandonato: #8e8e8e;
+    --ombra: 0 1px 2px rgba(60, 40, 20, 0.08);
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua",
+             "TeX Gyre Pagella", Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #171514;
+      --scheda: #22201e;
+      --testata: #2a2725;
+      --testo: #ebe5dd;
+      --tenue: #a39a91;
+      --linea: #3a3532;
+      --accento: #e3949b;
+      --accento-fondo: #3b2529;
+      --s-letto: #81c784;
+      --s-inlettura: #90caf9;
+      --s-daleggere: #e3c25a;
+      --s-inpari: #80cbc4;
+      --s-abbandonato: #9e9e9e;
+      --ombra: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--testo);
+    font-family: var(--serif);
+    font-size: 16px;
+    line-height: 1.4;
+  }
+  .pagina { max-width: 1200px; margin: 0 auto; padding: 0 16px 48px; }
+
+  header { padding: 36px 0 18px; }
+  h1 {
+    margin: 0;
+    font-size: clamp(2rem, 6vw, 2.8rem);
+    line-height: 1.1;
+    color: var(--accento);
+    letter-spacing: -0.01em;
+  }
+  .sottotitolo {
+    margin: 8px 0 0;
+    color: var(--tenue);
+    font-family: var(--sans);
+    font-size: 0.85rem;
+  }
+  .sottotitolo a { color: var(--accento); }
+
+  .comandi {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--fondo);
+    padding: 10px 0 12px;
+    border-bottom: 1px solid var(--linea);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+  }
+  .comandi input, .comandi select, .comandi button {
+    font: inherit;
+    color: var(--testo);
+    background: var(--scheda);
+    border: 1px solid var(--linea);
+    border-radius: 8px;
+    padding: 8px 10px;
+    min-height: 40px;
+  }
+  .comandi input { flex: 1 1 260px; min-width: 0; }
+  .comandi input:focus, .comandi select:focus, .comandi button:focus-visible {
+    outline: 2px solid var(--accento);
+    outline-offset: 1px;
+  }
+  .gruppo { display: inline-flex; }
+  .gruppo button { border-radius: 0; margin-left: -1px; cursor: pointer; }
+  .gruppo button:first-child { border-radius: 8px 0 0 8px; margin-left: 0; }
+  .gruppo button:last-child { border-radius: 0 8px 8px 0; }
+  .gruppo button[aria-pressed="true"] {
+    background: var(--accento);
+    border-color: var(--accento);
+    color: var(--scheda);
+  }
+  .conteggio {
+    margin: 12px 0 0;
+    min-height: 1em;
+    color: var(--tenue);
+    font-family: var(--sans);
+    font-size: 0.8rem;
+  }
+
+  /* Sezioni e gruppi */
+  h2.sezione {
+    margin: 30px 0 0;
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--tenue);
+  }
+  h3.autore {
+    margin: 24px 0 10px;
+    padding-bottom: 4px;
+    font-size: 1.25rem;
+    color: var(--accento);
+    border-bottom: 2px solid var(--accento);
+  }
+  .griglia {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr));
+    gap: 14px;
+  }
+
+  /* Scheda */
+  .scheda {
+    display: flex;
+    flex-direction: column;
+    background: var(--scheda);
+    border: 1px solid var(--linea);
+    border-left: 5px solid var(--colore-stato, var(--linea));
+    border-radius: 6px;
+    box-shadow: var(--ombra);
+    overflow: hidden;
+  }
+  .scheda.letto { --colore-stato: var(--s-letto); }
+  .scheda.in-lettura { --colore-stato: var(--s-inlettura); }
+  .scheda.da-leggere { --colore-stato: var(--s-daleggere); }
+  .scheda.in-pari { --colore-stato: var(--s-inpari); }
+  .scheda.abbandonato { --colore-stato: var(--s-abbandonato); }
+  .testata {
+    padding: 10px 12px 9px;
+    background: var(--testata);
+    border-bottom: 1px solid var(--linea);
+  }
+  .riga-alta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    font-family: var(--sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tenue);
+  }
+  .riga-alta .stato { color: var(--colore-stato, var(--tenue)); flex: none; }
+  .titolo {
+    margin: 4px 0 0;
+    font-size: 1.12rem;
+    line-height: 1.25;
+    font-weight: 700;
+  }
+  .serie { margin: 2px 0 0; font-style: italic; color: var(--accento); font-size: 0.95rem; }
+  .abbonamento {
+    font-family: var(--sans);
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: var(--accento);
+    background: var(--accento-fondo);
+    border-radius: 4px;
+    padding: 1px 6px;
+    margin-left: 6px;
+    vertical-align: 2px;
+    white-space: nowrap;
+  }
+  dl.campi {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 3px 12px;
+    margin: 0;
+    padding: 10px 12px 12px;
+    font-size: 0.92rem;
+  }
+  dl.campi dt {
+    font-family: var(--sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--tenue);
+    padding-top: 0.22em;
+  }
+  dl.campi dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  dd .originale { font-style: italic; }
+  dd.mancano { color: var(--accento); font-weight: 700; }
+  .copie { margin: 0; padding-left: 1.2em; }
+  .copie li + li { margin-top: 3px; }
+  .nota {
+    margin: 0;
+    padding: 8px 12px 10px;
+    border-top: 1px dashed var(--linea);
+    font-size: 0.9rem;
+  }
+  .vuoto { margin: 40px 0; color: var(--tenue); font-style: italic; text-align: center; }
+  footer {
+    margin-top: 48px;
+    color: var(--tenue);
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    text-align: center;
+  }
+  .nascosto {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="pagina">
+  <header>
+    <h1 id="titolo">Biblioteca</h1>
+    <p class="sottotitolo" id="sottotitolo"></p>
+  </header>
+
+  <div class="comandi" role="search">
+    <label class="nascosto" for="cerca">Cerca</label>
+    <input id="cerca" type="search" autocomplete="off"
+           placeholder="Cerca titolo, autore, serie, traduttore…">
+    <div class="gruppo" id="tipo" role="group" aria-label="Tipo">
+      <button type="button" data-tipo="tutto" aria-pressed="true">Tutto</button>
+      <button type="button" data-tipo="libri" aria-pressed="false">Libri</button>
+      <button type="button" data-tipo="fumetti" aria-pressed="false">Fumetti</button>
+    </div>
+    <label class="nascosto" for="stato">Stato di lettura</label>
+    <select id="stato">
+      <option value="">Tutti gli stati</option>
+      <option value="letto">Letti</option>
+      <option value="in lettura">In lettura</option>
+      <option value="da leggere">Da leggere</option>
+      <option value="in pari">In pari (fumetti)</option>
+      <option value="abbandonato">Abbandonati</option>
+    </select>
+  </div>
+  <p class="conteggio" id="conteggio" aria-live="polite"></p>
+
+  <main id="elenco"></main>
+  <footer>Catalogo generato automaticamente.</footer>
+</div>
+
+<script id="dati" type="application/json">{"titolo":"Biblioteca","aggiornato":"5 novembre 2026","libri":[{"autore":"Luther Blissett","titolo":"Q","anno_originale":"1999","stato":"in lettura","edizioni":[{"editore":"Einaudi","isbn":"9788806242022"},{"editore":"Mondadori","collana":"I Miti","anno":"2002","isbn":"9788804501220"}]},{"autore":"Marion Zimmer Bradley","titolo":"I cento regni di Darkover","serie":"Darkover","stato":"da leggere","edizioni":[{"editore":"Editrice Nord","isbn":"9788842907053","traduttori":["Gloria Barberi"]}]},{"autore":"Marion Zimmer Bradley","titolo":"Il sapiente di Darkover","titolo_originale":"Two to Conquer","anno_originale":"1980","serie":"Darkover","stato":"da leggere","edizioni":[{"editore":"TEA","collana":"TEA Due 86","anno":"1991"}]},{"autore":"Marion Zimmer Bradley","titolo":"L'erede di Hastur","titolo_originale":"The Heritage of Hastur","anno_originale":"1975","serie":"Darkover","stato":"da leggere","edizioni":[{"editore":"TEA","collana":"TEA Due 1027"},{"editore":"Editrice Nord"}]},{"autore":"Marion Zimmer Bradley","titolo":"L'esilio di Sharra","titolo_originale":"Sharra's Exile","anno_originale":"1981","serie":"Darkover","stato":"da leggere","edizioni":[{"editore":"Editrice Nord"},{"editore":"Editrice Nord"}]},{"autore":"Marion Zimmer Bradley","titolo":"La donna del falco","titolo_originale":"Hawkmistress!","anno_originale":"1982","serie":"Darkover","stato":"da leggere","edizioni":[{"editore":"TEA","collana":"TEA Due 30","anno":"1989"}]},{"autore":"Marion Zimmer Bradley","titolo":"La sfida degli Alton","titolo_originale":"Exile's Song","anno_originale":"1996","serie":"Darkover","stato":"da leggere","edizioni":[{"editore":"TEA","collana":"TEA Due 647","anno":"1998"}]},{"autore":"Marion Zimmer Bradley","titolo":"La spada di Aldones","titolo_originale":"The Sword of Aldones","anno_originale":"1962","serie":"Darkover","stato":"da leggere","edizioni":[{"editore":"TEA","collana":"TEA Due 205","anno":"1994"}]},{"autore":"Marion Zimmer Bradley","titolo":"La torre proibita","titolo_originale":"The Forbidden Tower","anno_originale":"1977","serie":"Darkover","stato":"da leggere","edizioni":[{"editore":"Editrice Nord"}]},{"autore":"Marion Zimmer Bradley","titolo":"Naufragio sul pianeta Darkover","titolo_originale":"Darkover Landfall","anno_originale":"1972","serie":"Darkover","stato":"da leggere","edizioni":[{"editore":"Editrice Nord","collana":"Fantacollana 63","anno":"1985"}]},{"autore":"Marion Zimmer Bradley","titolo":"Le nebbie di Avalon. Parte prima","titolo_originale":"The Mists of Avalon","anno_originale":"1983","serie":"Il ciclo di Avalon","numero_serie":"1","stato":"da leggere","edizioni":[{"editore":"HarperCollins Italia","anno":"2018","isbn":"9788869053696","traduttori":["Flavio Santi"]}]},{"autore":"Marion Zimmer Bradley","titolo":"Le nebbie di Avalon. Parte seconda","titolo_originale":"The Mists of Avalon","anno_originale":"1983","serie":"Il ciclo di Avalon","numero_serie":"1","stato":"da leggere","edizioni":[{"editore":"HarperCollins Italia","anno":"2019","isbn":"9788869054501"}]},{"autore":"Marion Zimmer Bradley","titolo":"Le querce di Albion","titolo_originale":"The Forest House","anno_originale":"1993","serie":"Il ciclo di Avalon","numero_serie":"2","stato":"da leggere","edizioni":[{"editore":"TEA","collana":"TEA Due 349"}]},{"autore":"Marion Zimmer Bradley","titolo":"La signora di Avalon","titolo_originale":"Lady of Avalon","anno_originale":"1997","serie":"Il ciclo di Avalon","numero_serie":"3","stato":"da leggere","edizioni":[{"editore":"Longanesi"}]},{"autore":"Marion Zimmer Bradley","titolo":"La sacerdotessa di Avalon","titolo_originale":"Priestess of Avalon","anno_originale":"2000","coautori":["Diana L. Paxson"],"serie":"Il ciclo di Avalon","numero_serie":"4","stato":"da leggere","edizioni":[{"editore":"Longanesi"}]},{"autore":"Marion Zimmer Bradley","titolo":"La torcia","titolo_originale":"The Firebrand","anno_originale":"1987","stato":"da leggere","edizioni":[{"editore":"HarperCollins Italia","anno":"2021","isbn":"9791259850171","traduttori":["Alba Bariffi"]},{"editore":"TEA","collana":"TEA Due 249"}]},{"autore":"Marion Zimmer Bradley","titolo":"Le luci di Atlantide","titolo_originale":"Web of Light / Web of Darkness","anno_originale":"1983","stato":"da leggere","edizioni":[{"editore":"TEA","collana":"TEA Due 229","anno":"2003","isbn":"9788878195820","traduttori":["Angela Ragusa"]},{"editore":"TEA","collana":"TEA Due 229","anno":"1994","isbn":"9788878195820","traduttori":["Angela Ragusa"]},{"editore":"CDE","traduttori":["Angela Ragusa"]}]},{"autore":"Bernard Cornwell","titolo":"Il re d'inverno","titolo_originale":"The Winter King","anno_originale":"1995","serie":"Excalibur","numero_serie":"1","stato":"da leggere","edizioni":[{"editore":"Mondadori","isbn":"9788804528746"}]},{"autore":"Bernard Cornwell","titolo":"Il cuore di Derfel","titolo_originale":"The Winter King / Enemy of God","anno_originale":"1995","serie":"Excalibur","numero_serie":"2","stato":"da leggere","edizioni":[{"editore":"Mondadori","isbn":"9788804528753","traduttori":["Gaetano Luigi Staffilano","Riccardo Valla"]}]},{"autore":"Bernard Cornwell","titolo":"La torre in fiamme","titolo_originale":"Enemy of God","anno_originale":"1996","serie":"Excalibur","numero_serie":"3","stato":"da leggere","edizioni":[{"editore":"Mondadori","isbn":"9788804528760","traduttori":["Gaetano Luigi Staffilano","Riccardo Valla"]}]},{"autore":"Bernard Cornwell","titolo":"Il tradimento","titolo_originale":"Excalibur","anno_originale":"1997","serie":"Excalibur","numero_serie":"4","stato":"da leggere","edizioni":[{"editore":"Mondadori","isbn":"9788804528777","traduttori":["Gaetano Luigi Staffilano","Riccardo Valla"]}]},{"autore":"Bernard Cornwell","titolo":"La spada perduta","titolo_originale":"Excalibur","anno_originale":"1997","serie":"Excalibur","numero_serie":"5","stato":"da leggere","edizioni":[{"editore":"Mondadori"}]},{"autore":"Michael Ende","titolo":"La storia infinita","titolo_originale":"Die unendliche Geschichte","anno_originale":"1979","stato":"da leggere","edizioni":[{"editore":"Corbaccio","collana":"I grandi scrittori","anno":"2011","isbn":"9788863801736","traduttori":["Amina Pandolfi"]}]},{"autore":"Mei Hachimoku","titolo":"Frieren – Oltre la fine del viaggio. Il romanzo: Preludio","titolo_originale":"Shōsetsu Sōsō no Frieren ~Zensō~","anno_originale":"2024","coautori":["Kanehito Yamada","Tsukasa Abe"],"serie":"Frieren – Oltre la fine del viaggio","stato":"da leggere","edizioni":[{"editore":"J-POP","anno":"2025","isbn":"9788834936825"}]},{"autore":"Robert Jordan","titolo":"L'occhio del mondo","titolo_originale":"The Eye of the World","anno_originale":"1990","serie":"La Ruota del Tempo","numero_serie":"1","stato":"da leggere","edizioni":[{"editore":"Fanucci","traduttori":["Gaetano Luigi Staffilano"]},{"editore":"Mondadori","collana":"Biblioteca di Fantasy","anno":"1992","traduttori":["Gaetano Luigi Staffilano"]}]},{"autore":"Guy Gavriel Kay","titolo":"Figli di terra e cielo","titolo_originale":"Children of Earth and Sky","anno_originale":"2016","stato":"da leggere","edizioni":[{"editore":"Mondadori","collana":"Oscar Fantastica","anno":"2025","isbn":"9788804769767","traduttori":["Massimo Scorsone"]}]},{"autore":"Guy Gavriel Kay","titolo":"La strada dei re","titolo_originale":"The Summer Tree","anno_originale":"1984","serie":"Il mondo di Fionavar","numero_serie":"1","stato":"letto","edizioni":[{"editore":"Sperling & Kupfer","collana":"Pandora 649","anno":"1993","isbn":"9788820015619","traduttori":["Riccardo Valla"]}]},{"autore":"Guy Gavriel Kay","titolo":"La via del fuoco","titolo_originale":"The Wandering Fire","anno_originale":"1986","serie":"Il mondo di Fionavar","numero_serie":"2","stato":"letto","edizioni":[{"editore":"Sperling & Kupfer","collana":"Pandora 675","anno":"1993","isbn":"9788820015626","traduttori":["Riccardo Valla"]}]},{"autore":"Guy Gavriel Kay","titolo":"Il sentiero della notte","titolo_originale":"The Darkest Road","anno_originale":"1986","serie":"Il mondo di Fionavar","numero_serie":"3","stato":"da leggere","edizioni":[{"editore":"Sperling & Kupfer","collana":"Pandora 708","anno":"1994","isbn":"9788820017927","traduttori":["Linda De Angelis"]}]},{"autore":"Guy Gavriel Kay","titolo":"Tigana","titolo_originale":"Tigana","anno_originale":"1990","stato":"da leggere","edizioni":[{"editore":"Ne/oN","collana":"Revival","anno":"2026","isbn":"9791281777729","traduttori":["Stefano Andrea Cresti"]}]},{"autore":"T. Kingfisher","titolo":"Nettle and Bone. Come uccidere un principe","titolo_originale":"Nettle & Bone","anno_originale":"2022","stato":"letto","edizioni":[{"editore":"Mondadori","anno":"2024","isbn":"9788804780410","traduttori":["Barbara Ronca"]}]},{"autore":"Ursula K. Le Guin","titolo":"Gifts. Doni","titolo_originale":"Gifts","anno_originale":"2004","serie":"Annals of the Western Shore","numero_serie":"1","stato":"da leggere","edizioni":[{"editore":"Mondadori","anno":"2024","isbn":"9788804786689","traduttori":["Stefano Andrea Cresti"]}]},{"autore":"Ursula K. Le Guin","titolo":"Voices. Voci","titolo_originale":"Voices","anno_originale":"2006","serie":"Annals of the Western Shore","numero_serie":"2","stato":"da leggere","edizioni":[{"editore":"Mondadori","collana":"I Grandi","anno":"2026","isbn":"9788804802433","traduttori":["Stefano Andrea Cresti"]}]},{"autore":"Ursula K. Le Guin","titolo":"Powers. Poteri","titolo_originale":"Powers","anno_originale":"2007","serie":"Annals of the Western Shore","numero_serie":"3","stato":"da leggere","edizioni":[{"editore":"Mondadori","collana":"I Grandi","anno":"2026","isbn":"9788804802440","traduttori":["Stefano Andrea Cresti"]}]},{"autore":"Ursula K. Le Guin","titolo":"I reietti dell'altro pianeta","titolo_originale":"The Dispossessed","anno_originale":"1974","serie":"Ciclo dell'Ekumene","numero_serie":"1","stato":"da leggere","edizioni":[{"editore":"Mondadori","collana":"Oscar Moderni","isbn":"9788804796718"},{"editore":"Editrice Nord","collana":"SF Narrativa d'Anticipazione"}]},{"autore":"Ursula K. Le Guin","titolo":"Il mondo della foresta","titolo_originale":"The Word for World Is Forest","anno_originale":"1972","serie":"Ciclo dell'Ekumene","numero_serie":"2","stato":"da leggere","edizioni":[{"editore":"Mondadori","collana":"Oscar Moderni","anno":"2024","isbn":"9788804757467","traduttori":["Riccardo Valla"]},{"editore":"Mondadori","collana":"Classici Urania","anno":"1988"}]},{"autore":"Ursula K. Le Guin","titolo":"Il mondo di Rocannon","titolo_originale":"Rocannon's World","anno_originale":"1966","serie":"Ciclo dell'Ekumene","numero_serie":"3","stato":"da leggere","edizioni":[{"editore":"Editrice Nord","collana":"SF Narrativa d'Anticipazione 41","anno":"1984"}]},{"autore":"Ursula K. Le Guin","titolo":"Il pianeta dell'esilio","titolo_originale":"Planet of Exile","anno_originale":"1966","serie":"Ciclo dell'Ekumene","numero_serie":"4","stato":"letto","edizioni":[{"editore":"Mondadori","collana":"Oscar, I Grandi della Fantascienza","traduttori":["Riccardo Valla"]},{"titolo":"Pianeta dell'esilio","editore":"Editrice Nord","collana":"Cosmo","anno":"1979","traduttori":["Riccardo Valla"]}]},{"autore":"Ursula K. Le Guin","titolo":"La città delle illusioni","titolo_originale":"City of Illusions","anno_originale":"1967","serie":"Ciclo dell'Ekumene","numero_serie":"5","stato":"da leggere","edizioni":[{"editore":"Mondadori","collana":"Oscar Moderni","isbn":"9788804799825","traduttori":["Silvia Pareschi"]},{"titolo":"Città delle illusioni","editore":"Mondadori","collana":"Classici Urania","anno":"1988"}]},{"autore":"Ursula K. Le Guin","titolo":"La mano sinistra del buio","titolo_originale":"The Left Hand of Darkness","anno_originale":"1969","serie":"Ciclo dell'Ekumene","numero_serie":"6","stato":"da leggere","edizioni":[{"editore":"Mondadori","collana":"Oscar Moderni Cult","isbn":"9788804732051","traduttori":["Chiara Reali"]}]},{"autore":"Ursula K. Le Guin","titolo":"La salvezza di Aka","titolo_originale":"The Telling","anno_originale":"2000","serie":"Ciclo dell'Ekumene","numero_serie":"7","stato":"da leggere","edizioni":[{"editore":"Mondadori","collana":"Urania 1471","anno":"2003"}]},{"autore":"Ursula K. Le Guin","titolo":"Lavinia","titolo_originale":"Lavinia","anno_originale":"2008","stato":"da leggere","edizioni":[{"editore":"Mondadori","collana":"Oscar Fantastica Classici","isbn":"9788804762737","traduttori":["Chiara Reali"]}]},{"autore":"Ursula K. Le Guin","titolo":"Non c'è tempo da perdere","titolo_originale":"No Time to Spare","anno_originale":"2017","stato":"da leggere","edizioni":[{"editore":"NN Editore","collana":"Le Perenni","isbn":"9791255751274","traduttori":["Daniele Serena"]}]},{"autore":"Ursula K. Le Guin","titolo":"La saga di Earthsea","serie":"Terramare","stato":"da leggere","edizioni":[{"editore":"Editrice Nord"}]},{"autore":"Ursula K. Le Guin","titolo":"Terramare. La saga completa","serie":"Terramare","stato":"da leggere","edizioni":[{"editore":"Mondadori","anno":"2018","isbn":"9788804676959"}]},{"autore":"Ursula K. Le Guin","titolo":"Il mago","titolo_originale":"A Wizard of Earthsea","anno_originale":"1968","serie":"Terramare","numero_serie":"1","stato":"da leggere","edizioni":[{"editore":"Mondadori","anno":"2002","isbn":"9788804507390"}]},{"autore":"Ursula K. Le Guin","titolo":"Le tombe di Atuan","titolo_originale":"The Tombs of Atuan","anno_originale":"1971","serie":"Terramare","numero_serie":"2","stato":"da leggere","edizioni":[{"editore":"Mondadori","anno":"2003","isbn":"9788804516897"}]},{"autore":"Ursula K. Le Guin","titolo":"L'isola del drago","titolo_originale":"Tehanu","anno_originale":"1990","serie":"Terramare","numero_serie":"4","stato":"da leggere","edizioni":[{"editore":"Longanesi","collana":"I Maestri del Fantastico","anno":"1992","isbn":"9788830410701"}]},{"autore":"Ann Leckie","titolo":"La torre del corvo","titolo_originale":"The Raven Tower","anno_originale":"2019","stato":"letto","edizioni":[{"editore":"Mondadori","collana":"Oscar Fantastica","anno":"2021","isbn":"9788804732365","traduttori":["Francesca Mastruzzo"]}]},{"autore":"Candace Robb","titolo":"La rosa del farmacista","titolo_originale":"The Apothecary Rose","anno_originale":"1993","serie":"I misteri di Owen Archer","numero_serie":"1","stato":"da leggere","edizioni":[{"editore":"Piemme","collana":"Mini Pocket 1","anno":"2003"}]},{"autore":"Candace Robb","titolo":"Il segreto della cappella","titolo_originale":"The Lady Chapel","anno_originale":"1994","serie":"I misteri di Owen Archer","numero_serie":"2","stato":"da leggere","edizioni":[{"editore":"Piemme","collana":"Best 3","anno":"2002","traduttori":["Amedeo Romeo"]}]},{"autore":"Candace Robb","titolo":"La reliquia rubata","titolo_originale":"The Nun's Tale","anno_originale":"1995","serie":"I misteri di Owen Archer","numero_serie":"3","stato":"da leggere","edizioni":[{"editore":"Piemme","collana":"Piemme Pocket","anno":"2004","isbn":"9788838482458"}]},{"autore":"Candace Robb","titolo":"La donna del fiume","titolo_originale":"The King's Bishop","anno_originale":"1996","serie":"I misteri di Owen Archer","numero_serie":"4","stato":"da leggere","edizioni":[{"editore":"Piemme","collana":"Piemme Pocket","anno":"2005","isbn":"9788838483271"}]},{"autore":"Candace Robb","titolo":"La morte nera","titolo_originale":"The Riddle of St. Leonard's","anno_originale":"1997","serie":"I misteri di Owen Archer","numero_serie":"5","stato":"da leggere","edizioni":[{"editore":"Piemme","collana":"Noir 5","anno":"2004"}]},{"autore":"Candace Robb","titolo":"Il borgo insanguinato","titolo_originale":"A Gift of Sanctuary","anno_originale":"1998","serie":"I misteri di Owen Archer","numero_serie":"6","stato":"da leggere","edizioni":[{"editore":"Piemme","collana":"Best 14","anno":"2004","traduttori":["Amedeo Romeo"]}]},{"autore":"Candace Robb","titolo":"I delitti della cattedrale","titolo_originale":"A Spy for the Redeemer","anno_originale":"1999","serie":"I misteri di Owen Archer","numero_serie":"7","stato":"da leggere","edizioni":[{"editore":"Piemme","anno":"2006","isbn":"9788838485633"}]},{"autore":"Candace Robb","titolo":"Il cavaliere assassinato","titolo_originale":"The Cross-Legged Knight","anno_originale":"2002","serie":"I misteri di Owen Archer","numero_serie":"8","stato":"da leggere","edizioni":[{"editore":"Piemme","collana":"Thriller 16","anno":"2006"}]},{"autore":"J.R.R. Tolkien","titolo":"Il cacciatore di draghi","titolo_originale":"Farmer Giles of Ham","anno_originale":"1949","stato":"da leggere","edizioni":[{"editore":"Bompiani","collana":"I Grandi Tascabili"}]},{"autore":"J.R.R. Tolkien","titolo":"La Compagnia dell'Anello","titolo_originale":"The Fellowship of the Ring","anno_originale":"1954","serie":"Il Signore degli Anelli","numero_serie":"1","stato":"letto","edizioni":[{"editore":"Bompiani","anno":"2019","isbn":"9788845299193","traduttori":["Ottavio Fatica"]},{"editore":"Bompiani","collana":"I Grandi Tascabili","isbn":"9788830105263","traduttori":["Ottavio Fatica"]}]},{"autore":"J.R.R. Tolkien","titolo":"Le due torri","titolo_originale":"The Two Towers","anno_originale":"1954","serie":"Il Signore degli Anelli","numero_serie":"2","stato":"letto","edizioni":[{"editore":"Bompiani","isbn":"9788830102712","traduttori":["Ottavio Fatica"]},{"editore":"Bompiani","collana":"I Grandi Tascabili","isbn":"9788830105270","traduttori":["Ottavio Fatica"]},{"titolo":"Le due Torri","editore":"Bompiani","collana":"Tascabili Bompiani","isbn":"8845232263","traduttori":["Vittoria Alliata di Villafranca"]}]},{"autore":"J.R.R. Tolkien","titolo":"Il ritorno del re","titolo_originale":"The Return of the King","anno_originale":"1955","serie":"Il Signore degli Anelli","numero_serie":"3","stato":"da leggere","edizioni":[{"editore":"Bompiani","isbn":"9788830102729","traduttori":["Ottavio Fatica"]},{"editore":"Bompiani","collana":"I Grandi Tascabili","isbn":"9788830105287","traduttori":["Ottavio Fatica"]},{"titolo":"Il ritorno del Re","editore":"Bompiani","collana":"Tascabili Bompiani","isbn":"8845232271","traduttori":["Vittoria Alliata di Villafranca"]}]},{"autore":"J.R.R. Tolkien","titolo":"Il Silmarillion","titolo_originale":"The Silmarillion","anno_originale":"1977","stato":"da leggere","edizioni":[{"editore":"Bompiani","collana":"I Grandi Tascabili","anno":"2013","isbn":"9788845272400","traduttori":["Francesco Saba Sardi"]}]},{"autore":"J.R.R. Tolkien","titolo":"La caduta di Gondolin","titolo_originale":"The Fall of Gondolin","anno_originale":"2018","stato":"da leggere","edizioni":[{"editore":"Bompiani","collana":"I Grandi Tascabili","isbn":"9788830107373","traduttori":["Luca Manini","Simone Buttazzi"]}]},{"autore":"J.R.R. Tolkien","titolo":"Lo Hobbit","titolo_originale":"The Hobbit","anno_originale":"1937","stato":"letto","edizioni":[{"editore":"Adelphi","anno":"2012","isbn":"9788845927553"},{"titolo":"Lo Hobbit annotato","editore":"Bompiani","collana":"I Grandi Tascabili","anno":"2012","isbn":"9788845271403","traduttori":["Caterina Ciuferri","Paolo Paron","Grazia Maria Griffini","Oronzo Cilli"]}]},{"autore":"M.L. Wang","titolo":"Sangue sull'Oasi di Luce","titolo_originale":"Blood Over Bright Haven","stato":"letto","edizioni":[{"editore":"Mondadori","anno":"2026","isbn":"9788804795568","traduttori":["Barbara Ronca"]}]}],"fumetti":[{"titolo":"Atelier of Witch Hat – Grimoire Edition","titolo_originale":"Tongari Bōshi no Atelier","autori":["Kamome Shirahama"],"origine":{"paese":"Giappone","editore":"Kodansha","stato":"in corso"},"italia":{"editore":"Panini (Planet Manga)","edizione":"Grimoire Edition","volumi":4,"stato":"in corso"},"verificato":"2 nov 2026","posseduti":"1","letti":"1","mancanti":"2–4","stato":"letto"},{"titolo":"Beast Complex","titolo_originale":"Beast Complex","autori":["Paru Itagaki"],"origine":{"paese":"Giappone","editore":"Akita Shoten","volumi":4,"stato":"in corso"},"italia":{"editore":"Panini (Planet Manga)","volumi":3},"verificato":"1 nov 2026","posseduti":"1–3","letti":"1–2","stato":"in lettura"},{"titolo":"Beastars","titolo_originale":"Beastars","autori":["Paru Itagaki"],"origine":{"paese":"Giappone","editore":"Akita Shoten","volumi":22,"stato":"conclusa"},"italia":{"editore":"Panini (Planet Manga)","volumi":22,"stato":"conclusa"},"previsti":22,"verificato":"1 nov 2026","posseduti":"1–22","letti":"1–22","variant":["n. 1: Lucca Comics 2026 (anche la regular)"],"stato":"letto"},{"titolo":"Claymore","titolo_originale":"Claymore","autori":["Norihiro Yagi"],"origine":{"paese":"Giappone","editore":"Shueisha","volumi":27,"stato":"conclusa"},"italia":{"editore":"Star Comics","edizione":"prima edizione","volumi":27,"stato":"conclusa"},"previsti":27,"verificato":"2 nov 2026","posseduti":"1–27","stato":"da leggere"},{"titolo":"Clevatess","titolo_originale":"Clevatess – Majū no Ō to Akago to Shikabane no Yūsha","autori":["Yūji Iwahara"],"origine":{"paese":"Giappone","editore":"LINE Digital Frontier / Media Factory (KADOKAWA)","volumi":14,"stato":"in corso"},"italia":{"editore":"Panini (Planet Manga)","volumi":10,"stato":"in corso"},"verificato":"2 nov 2026","abbonamento":true,"posseduti":"1–10","letti":"1–9","stato":"in lettura"},{"titolo":"Dandadan","titolo_originale":"Dandadan","autori":["Yukinobu Tatsu"],"origine":{"paese":"Giappone","editore":"Shueisha","volumi":25,"stato":"in corso"},"italia":{"editore":"J-POP","volumi":23,"stato":"in corso"},"verificato":"2 nov 2026","abbonamento":true,"posseduti":"1–23","variant":["n. 1: Variant Edition, copertina in bianco e nero (ISBN 9788834931486) (anche la regular)","n. 1: Occult Club Limited Edition, costa gialla e rosa (ISBN 9788834911471) (anche la regular)","n. 2: Variant Popstore, Games Academy e Funside (ISBN 9788834911655) (anche la regular)","n. 6: Limited Edition, 8,90 € (ISBN 9788834912447) (solo variant)","n. 19: Variant, costa bianca e nera disegnata (anche la regular)","n. 20: Variant, costa rossa (ISBN 9788834939659) (anche la regular)"],"stato":"da leggere"},{"titolo":"Dandadan Daizukan Fanbook","titolo_originale":"Dandadan Daizukan","autori":["Yukinobu Tatsu"],"origine":{"paese":"Giappone","editore":"Shueisha","volumi":1,"stato":"conclusa"},"italia":{"editore":"J-POP","volumi":1,"stato":"conclusa"},"previsti":1,"verificato":"2 nov 2026","posseduti":"1","stato":"da leggere"},{"titolo":"Fafhrd e il Gray Mouser","titolo_originale":"Fafhrd and the Gray Mouser","autori":["Howard Chaykin","Mike Mignola","Al Williamson"],"origine":{"paese":"Stati Uniti","editore":"Epic Comics (Marvel)","edizione":"miniserie in 4 albi","volumi":4,"stato":"conclusa"},"italia":{"editore":"Editoriale Cosmo","edizione":"da edicola, tutto a colori","volumi":2,"stato":"conclusa"},"previsti":4,"verificato":"2 nov 2026","posseduti":"1–2","letti":"1","stato":"in lettura"},{"titolo":"Folli passioni","titolo_originale":"Kyōjin Kankei","autori":["Kazuo Kamimura"],"origine":{"paese":"Giappone","editore":"Futabasha","stato":"conclusa"},"italia":{"editore":"Coconino Press","volumi":2,"stato":"conclusa"},"verificato":"2 nov 2026","posseduti":"1–2","stato":"da leggere"},{"titolo":"Frieren – Oltre la fine del viaggio","titolo_originale":"Sōsō no Frieren","autori":["Kanehito Yamada","Tsukasa Abe"],"origine":{"paese":"Giappone","editore":"Shogakukan","volumi":15,"stato":"in pausa"},"italia":{"editore":"J-POP","volumi":15,"stato":"in corso"},"verificato":"2 nov 2026","abbonamento":true,"posseduti":"1–15","variant":["n. 1: Variant cover a tiratura limitata per Popstore (ISBN 9788834908280) (anche la regular)","n. 1: Variant cover (ISBN 9788834908273) (anche la regular)","n. 12: Edizione deluxe con il libro rilegato Fanfare for Frieren (anche la regular)","n. 14: Edizione deluxe con il libro rilegato Sparkle for Frieren (anche la regular)","n. 15: Edizione deluxe con il racconto in prosa illustrato Statue for Sein (anche la regular)"],"stato":"da leggere"},{"titolo":"Frieren – Oltre la fine del viaggio. Art Works","titolo_originale":"Sōsō no Frieren Art Works","autori":["Kanehito Yamada","Tsukasa Abe"],"origine":{"paese":"Giappone","editore":"Shogakukan","volumi":1},"italia":{"editore":"J-POP","volumi":1},"verificato":"2 nov 2026","posseduti":"1","stato":"da leggere"},{"titolo":"Frieren – Oltre la fine del viaggio. Fanbook","titolo_originale":"Sōsō no Frieren Kōshiki Fanbook","autori":["Kanehito Yamada","Tsukasa Abe"],"origine":{"paese":"Giappone","editore":"Shogakukan","volumi":1,"stato":"conclusa"},"italia":{"editore":"J-POP","volumi":1,"stato":"conclusa"},"previsti":1,"verificato":"2 nov 2026","posseduti":"1","stato":"da leggere"},{"titolo":"Fullmetal Alchemist","titolo_originale":"Hagane no Renkinjutsushi","autori":["Hiromu Arakawa"],"origine":{"paese":"Giappone","editore":"Square Enix","edizione":"kanzenban","volumi":18,"stato":"conclusa"},"italia":{"editore":"Panini (Planet Manga)","edizione":"Ultimate Deluxe Edition","volumi":18,"stato":"conclusa"},"previsti":18,"verificato":"1 nov 2026","posseduti":"1–18","stato":"da leggere"},{"titolo":"Fullmetal Alchemist Anniversary Book","titolo_originale":"Hagane no Renkinjutsushi 20th Anniversary Book","autori":["Hiromu Arakawa"],"origine":{"paese":"Giappone","editore":"Square Enix","volumi":1,"stato":"conclusa"},"italia":{"editore":"Panini (Planet Manga)","volumi":1,"stato":"conclusa"},"previsti":1,"verificato":"1 nov 2026","posseduti":"1","stato":"da leggere"},{"titolo":"Gokurakugai","titolo_originale":"Gokurakugai","autori":["Yuto Sano"],"origine":{"paese":"Giappone","editore":"Shueisha","volumi":6,"stato":"in corso"},"italia":{"editore":"Panini (Planet Manga)","volumi":6,"stato":"in corso"},"verificato":"2 nov 2026","abbonamento":true,"posseduti":"1–6","letti":"1–6","variant":["n. 2: Variant Planet Manga (costa viola) (anche la regular)"],"stato":"in pari"},{"titolo":"Il vascello delle stelle","titolo_originale":"Hoshikuzu-iro no Fune","autori":["Yoshimi Uchida"],"origine":{"paese":"Giappone","editore":"Shueisha","volumi":1,"stato":"conclusa"},"italia":{"editore":"Hikari","volumi":1,"stato":"conclusa"},"previsti":1,"verificato":"2 nov 2026","posseduti":"1","stato":"da leggere"},{"titolo":"La storia di Genji","titolo_originale":"Asakiyumemishi","autori":["Waki Yamato"],"origine":{"paese":"Giappone","editore":"Kodansha","edizione":"grande formato / bunko","volumi":7,"stato":"conclusa"},"italia":{"editore":"J-POP","volumi":7,"stato":"conclusa"},"previsti":7,"verificato":"1 nov 2026","posseduti":"1–7","stato":"da leggere"},{"titolo":"La stufa in riva al mare e altre storie","titolo_originale":"Umibe no Stove","autori":["Kogani Oshiro"],"origine":{"paese":"Giappone","editore":"Leed-sha","volumi":1,"stato":"conclusa"},"italia":{"editore":"J-POP","volumi":1,"stato":"conclusa"},"previsti":1,"verificato":"2 nov 2026","posseduti":"1","letti":"1","stato":"letto"},{"titolo":"Naruto Color","titolo_originale":"Naruto (edizione a colori)","autori":["Masashi Kishimoto"],"origine":{"paese":"Giappone","editore":"Shueisha","edizione":"edizione a colori (digitale)","volumi":72,"stato":"conclusa"},"italia":{"editore":"Panini (Planet Manga)","edizione":"New Edition","volumi":18,"stato":"in corso"},"previsti":72,"verificato":"2 nov 2026","abbonamento":true,"posseduti":"1–17","letti":"1–10","mancanti":"18","stato":"in lettura"},{"titolo":"New York New York","titolo_originale":"Nyū Yōku Nyū Yōku","autori":["Marimo Ragawa"],"origine":{"paese":"Giappone","editore":"Hakusensha","edizione":"bunko","volumi":2,"stato":"conclusa"},"italia":{"editore":"Panini (Planet Manga)","edizione":"new edition","volumi":2,"stato":"conclusa"},"previsti":2,"verificato":"1 nov 2026","posseduti":"1–2","stato":"in lettura"},{"titolo":"Sanda","titolo_originale":"Sanda","autori":["Paru Itagaki"],"origine":{"paese":"Giappone","editore":"Akita Shoten","volumi":16,"stato":"conclusa"},"italia":{"editore":"Panini (Planet Manga)","volumi":16,"stato":"conclusa"},"previsti":16,"verificato":"2 nov 2026","posseduti":"1–16","letti":"1–3","variant":["n. 1: Variant uscita insieme alla prima tiratura (anche la regular)","n. 1: Lucca Comics 2026 (anche la regular)"],"stato":"in lettura"},{"titolo":"Taika's Reason","titolo_originale":"Taika no Risei","autori":["Paru Itagaki"],"origine":{"paese":"Giappone","editore":"Akita Shoten","volumi":7,"stato":"in corso"},"italia":{"editore":"Panini (Planet Manga)","volumi":1,"stato":"in corso"},"verificato":"2 nov 2026","posseduti":"1","stato":"da leggere"},{"titolo":"Un mago di Terramare – Il graphic novel","titolo_originale":"A Wizard of Earthsea: A Graphic Novel","autori":["Ursula K. Le Guin","Fred Fordham"],"origine":{"paese":"Stati Uniti","editore":"Clarion Books","volumi":1,"stato":"conclusa"},"italia":{"editore":"Mondadori (Oscar Ink)","volumi":1,"stato":"conclusa"},"previsti":1,"verificato":"5 nov 2026","posseduti":"1","stato":"da leggere"},{"titolo":"Ushimitsugao – Bella (delle due) di notte","titolo_originale":"Ushimitsu Gao","autori":["Paru Itagaki"],"origine":{"paese":"Giappone","editore":"Akita Shoten","volumi":3,"stato":"conclusa"},"italia":{"editore":"Panini (Planet Manga)","volumi":1,"stato":"in corso"},"previsti":3,"verificato":"2 nov 2026","posseduti":"1","stato":"da leggere"},{"titolo":"Yomi no Tsugai","titolo_originale":"Yomi no Tsugai","autori":["Hiromu Arakawa"],"origine":{"paese":"Giappone","editore":"Square Enix","volumi":13,"stato":"in corso"},"italia":{"editore":"Panini (Planet Manga)","volumi":12,"stato":"in corso"},"verificato":"1 nov 2026","posseduti":"1, 4","mancanti":"2–3, 5–12","stato":"da leggere"}]}</script>
+<script>
+(function () {
+  "use strict";
+  var D = JSON.parse(document.getElementById("dati").textContent);
+  var libri = D.libri || [], fumetti = D.fumetti || [];
+
+  function el(tag, cls, testo) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (testo != null && testo !== "") n.textContent = testo;
+    return n;
+  }
+  function unisci(parti, sep) {
+    return parti.filter(function (p) { return p != null && p !== ""; }).join(sep);
+  }
+  function elenco(nomi) {
+    if (!nomi || !nomi.length) return "";
+    if (nomi.length === 1) return nomi[0];
+    return nomi.slice(0, -1).join(", ") + " e " + nomi[nomi.length - 1];
+  }
+  function norm(t) {
+    return String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  }
+  function classeStato(s) { return s ? s.replace(/ /g, "-") : ""; }
+
+  // Testo su cui cercare, una volta sola per voce
+  libri.forEach(function (b) {
+    var parti = [b.titolo, b.titolo_originale, b.autore, b.serie].concat(b.coautori || [], b.tag || []);
+    (b.edizioni || []).forEach(function (e) {
+      parti.push(e.titolo, e.editore, e.collana, e.isbn);
+      parti = parti.concat(e.traduttori || []);
+    });
+    b._cerca = norm(parti.join(" "));
+  });
+  fumetti.forEach(function (x) {
+    var o = x.origine || {}, i = x.italia || {};
+    x._cerca = norm([x.titolo, x.titolo_originale, o.editore, o.paese, i.editore]
+      .concat(x.autori || [], x.tag || [], x.variant || []).join(" "));
+  });
+
+  // Intestazione
+  var sotto = document.getElementById("sottotitolo");
+  sotto.appendChild(document.createTextNode(unisci([
+    "Aggiornato al " + D.aggiornato,
+    libri.length + (libri.length === 1 ? " libro" : " libri"),
+    fumetti.length ? fumetti.length + " serie a fumetti" : ""
+  ], " · ") + " · "));
+  var pdf = el("a", "", "Scarica il PDF");
+  pdf.href = "biblioteca.pdf";
+  sotto.appendChild(pdf);
+
+  // Senza fumetti il selettore del tipo non serve
+  if (!fumetti.length) {
+    document.getElementById("tipo").style.display = "none";
+    document.querySelector('#stato option[value="in pari"]').remove();
+  }
+
+  // Stato dei filtri, ricordato nell'indirizzo (#q=...&tipo=...&stato=...)
+  var filtro = { q: "", tipo: "tutto", stato: "" };
+  try {
+    var h = new URLSearchParams(location.hash.slice(1));
+    filtro.q = h.get("q") || "";
+    filtro.tipo = h.get("tipo") || "tutto";
+    filtro.stato = h.get("stato") || "";
+  } catch (e) {}
+
+  var cerca = document.getElementById("cerca");
+  var selStato = document.getElementById("stato");
+  var bottoni = document.querySelectorAll("#tipo button");
+  cerca.value = filtro.q;
+  selStato.value = filtro.stato;
+
+  function corrisponde(voce) {
+    if (filtro.stato && voce.stato !== filtro.stato) return false;
+    var parole = norm(filtro.q).split(/\s+/).filter(Boolean);
+    for (var i = 0; i < parole.length; i++) {
+      if (voce._cerca.indexOf(parole[i]) < 0) return false;
+    }
+    return true;
+  }
+
+  // Una scheda: testata (autore/stato, titolo, serie) + campi etichettati
+  function scheda(voce, sopra, titolo) {
+    var a = el("article", "scheda " + classeStato(voce.stato));
+    var t = el("div", "testata");
+    var alta = el("div", "riga-alta");
+    alta.appendChild(el("span", "", sopra));
+    if (voce.stato) alta.appendChild(el("span", "stato", voce.stato));
+    t.appendChild(alta);
+    t.appendChild(titolo);
+    a.appendChild(t);
+    var dl = el("dl", "campi");
+    a.appendChild(dl);
+    a._campo = function (nome, valore, cls) {
+      if (valore == null || valore === "") return;
+      dl.appendChild(el("dt", "", nome));
+      var dd = el("dd", cls || "");
+      if (valore instanceof Node) dd.appendChild(valore); else dd.textContent = String(valore);
+      dl.appendChild(dd);
+    };
+    a._testata = t;
+    a._dl = dl;
+    return a;
+  }
+
+  function copia(e, conTitolo) {
+    var trad = elenco(e.traduttori);
+    return unisci([
+      conTitolo ? e.titolo : "",
+      unisci([e.editore, e.collana, e.anno], ", "),
+      trad ? "trad. " + trad : "",
+      e.lingua && !/^(italiano|it)$/i.test(e.lingua) ? "in " + e.lingua : "",
+      (e.formati || []).join(", "),
+      e.posizione ? "posizione: " + e.posizione : "",
+      e.prestato_a ? "prestato a " + e.prestato_a : ""
+    ], " · ");
+  }
+
+  function schedaLibro(b) {
+    var titolo = el("h4", "titolo", b.titolo);
+    var a = scheda(b, b.autore, titolo);
+    if (b.serie) a._testata.appendChild(el("p", "serie", unisci([b.serie, b.numero_serie], ", ")));
+    var campo = a._campo;
+    if (b.coautori) campo("Con", elenco(b.coautori));
+    if (b.titolo_originale || b.anno_originale) {
+      var orig = el("span");
+      if (b.titolo_originale && b.titolo_originale !== b.titolo) {
+        orig.appendChild(el("span", "originale", b.titolo_originale));
+        if (b.anno_originale) orig.appendChild(document.createTextNode(", " + b.anno_originale));
+      } else {
+        orig.textContent = b.anno_originale || "";
+      }
+      campo("Originale", orig);
+    }
+    var ed = b.edizioni || [];
+    if (ed.length === 1) {
+      var e = ed[0];
+      if (e.titolo) campo("Titolo", e.titolo);
+      campo("Edizione", unisci([e.editore, e.collana, e.anno], ", "));
+      campo("Traduzione", elenco(e.traduttori));
+      if (e.lingua && !/^(italiano|it)$/i.test(e.lingua)) campo("Lingua", e.lingua);
+      campo("Formato", (e.formati || []).join(", "));
+      campo("ISBN", e.isbn);
+      campo("Posizione", e.posizione);
+      campo("Prestato a", e.prestato_a);
+    } else if (ed.length > 1) {
+      var ol = el("ol", "copie");
+      ed.forEach(function (e) { ol.appendChild(el("li", "", copia(e, true))); });
+      campo(ed.length + " copie", ol);
+    }
+    if (b.non_posseduto) campo("Copia", "non posseduta");
+    if (b.letture) {
+      campo(b.letture.length > 1 ? "Letture" : "Lettura",
+            b.letture.map(function (l) { return l.replace(/^letto: /, ""); }).join("; "));
+    }
+    if (b.voto != null) campo("Voto", b.voto + "/10");
+    if (b.tag) campo("Tag", b.tag.join(", "));
+    if (b.note) a.appendChild(el("p", "nota", b.note));
+    if (!a._dl.children.length) a._dl.remove();
+    return a;
+  }
+
+  function schedaFumetto(x) {
+    var titolo = el("h4", "titolo", x.titolo);
+    if (x.abbonamento) titolo.appendChild(el("span", "abbonamento", "in abbonamento"));
+    var a = scheda(x, elenco(x.autori) || "Fumetto", titolo);
+    if (x.titolo_originale) a._testata.appendChild(el("p", "serie", x.titolo_originale));
+    function pubbl(p, conPaese) {
+      if (!p) return "";
+      return unisci([conPaese ? p.paese : "", unisci([p.editore, p.edizione], ", "),
+                     p.volumi != null ? p.volumi + " vol." : "", p.stato], " · ");
+    }
+    var campo = a._campo;
+    campo("Italia", pubbl(x.italia, false));
+    campo("Origine", pubbl(x.origine, true));
+    campo("Previsti", x.previsti != null ? x.previsti : "non noto");
+    campo("Posseduti", x.posseduti || "nessuno");
+    var va = x.variant || [];
+    if (va.length === 1) {
+      campo("Variant", va[0]);
+    } else if (va.length > 1) {
+      var ul = el("ul", "copie");
+      va.forEach(function (v) { ul.appendChild(el("li", "", v)); });
+      campo("Variant", ul);
+    }
+    campo("Letti", x.letti || "nessuno");
+    campo("Mancano", x.mancanti, "mancano");
+    campo("Formato", (x.formati || []).join(", "));
+    if (x.voto != null) campo("Voto", x.voto + "/10");
+    if (x.tag) campo("Tag", x.tag.join(", "));
+    campo("Conteggi al", x.verificato);
+    if (x.note) a.appendChild(el("p", "nota", x.note));
+    if (!a._dl.children.length) a._dl.remove();
+    return a;
+  }
+
+  function disegna() {
+    var main = document.getElementById("elenco");
+    main.textContent = "";
+    var mostraLibri = filtro.tipo !== "fumetti", mostraFumetti = filtro.tipo !== "libri";
+    var trovatiL = mostraLibri ? libri.filter(corrisponde) : [];
+    var trovatiF = mostraFumetti ? fumetti.filter(corrisponde) : [];
+    var due = trovatiL.length && trovatiF.length;
+
+    if (trovatiL.length) {
+      if (due) main.appendChild(el("h2", "sezione", "Libri"));
+      var autore = null, griglia = null;
+      trovatiL.forEach(function (b) {
+        if (b.autore !== autore) {
+          autore = b.autore;
+          main.appendChild(el("h3", "autore", autore));
+          griglia = el("div", "griglia");
+          main.appendChild(griglia);
+        }
+        griglia.appendChild(schedaLibro(b));
+      });
+    }
+    if (trovatiF.length) {
+      main.appendChild(el("h2", "sezione", "Fumetti"));
+      var gF = el("div", "griglia");
+      gF.style.marginTop = "10px";
+      trovatiF.forEach(function (x) { gF.appendChild(schedaFumetto(x)); });
+      main.appendChild(gF);
+    }
+    if (!trovatiL.length && !trovatiF.length) {
+      main.appendChild(el("p", "vuoto", "Nessun risultato."));
+    }
+
+    var totale = (mostraLibri ? libri.length : 0) + (mostraFumetti ? fumetti.length : 0);
+    var trovati = trovatiL.length + trovatiF.length;
+    document.getElementById("conteggio").textContent =
+      trovati === totale ? "" : trovati + " su " + totale;
+
+    bottoni.forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.getAttribute("data-tipo") === filtro.tipo));
+    });
+    try {
+      var p = new URLSearchParams();
+      if (filtro.q) p.set("q", filtro.q);
+      if (filtro.tipo !== "tutto") p.set("tipo", filtro.tipo);
+      if (filtro.stato) p.set("stato", filtro.stato);
+      var nuovo = p.toString();
+      history.replaceState(null, "", nuovo ? "#" + nuovo : location.pathname + location.search);
+    } catch (e) {}
+  }
+
+  cerca.addEventListener("input", function () { filtro.q = cerca.value; disegna(); });
+  selStato.addEventListener("change", function () { filtro.stato = selStato.value; disegna(); });
+  bottoni.forEach(function (b) {
+    b.addEventListener("click", function () { filtro.tipo = b.getAttribute("data-tipo"); disegna(); });
+  });
+  disegna();
+})();
+</script>
+</body>
+</html>
